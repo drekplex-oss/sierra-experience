@@ -1,0 +1,92 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+
+export default function NuevoPaquetePage() {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [price, setPrice] = useState('')
+  const [duration, setDuration] = useState('')
+  const [maxPeople, setMaxPeople] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [includes, setIncludes] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleCrear = async () => {
+    if (!name || !price || !duration || !maxPeople) {
+      setError('Por favor llena todos los campos obligatorios')
+      return
+    }
+    setLoading(true)
+    setError('')
+    const res = await fetch('/api/paquetes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        description,
+        price: Number(price),
+        duration,
+        max_people: Number(maxPeople),
+        image_url: imageUrl,
+        includes,
+      })
+    })
+    const result = await res.json()
+    if (result.error) {
+      setError('Error: ' + result.error)
+      setLoading(false)
+    } else {
+      window.location.href = '/admin/paquetes'
+    }
+  }
+
+  return (
+    <div style={{minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: 'Inter, sans-serif'}}>
+      <div style={{backgroundColor: '#ffffff', padding: '20px 40px', borderBottom: '1px solid #e8edf5', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <h1 style={{fontSize: '24px', fontWeight: 700, color: '#1a2d4a', margin: 0}}>Nuevo Paquete</h1>
+        <Link href="/admin/paquetes" style={{fontSize: '13px', color: '#8a9ab5', textDecoration: 'none'}}>Volver</Link>
+      </div>
+      <div style={{maxWidth: '700px', margin: '40px auto', padding: '0 40px'}}>
+        {error && <div style={{backgroundColor: '#fff0f0', color: '#c0392b', padding: '14px', borderRadius: '8px', marginBottom: '24px'}}>{error}</div>}
+        <div style={{backgroundColor: '#ffffff', borderRadius: '16px', padding: '36px', display: 'flex', flexDirection: 'column', gap: '24px'}}>
+          <div>
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>Nombre *</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del paquete" style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
+          </div>
+          <div>
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>Descripcion</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', resize: 'none', boxSizing: 'border-box'}} />
+          </div>
+          <div>
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>Que incluye</label>
+            <textarea value={includes} onChange={(e) => setIncludes(e.target.value)} rows={3} style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', resize: 'none', boxSizing: 'border-box'}} />
+          </div>
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+            <div>
+              <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>Precio (MXN) *</label>
+              <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="2500" style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
+            </div>
+            <div>
+              <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>Duracion *</label>
+              <input type="text" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="3 dias / 2 noches" style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
+            </div>
+          </div>
+          <div>
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>Maximo de personas *</label>
+            <input type="number" value={maxPeople} onChange={(e) => setMaxPeople(e.target.value)} placeholder="12" style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
+          </div>
+          <div>
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', marginBottom: '8px'}}>URL de imagen</label>
+            <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." style={{width: '100%', border: '1px solid #dde3ee', borderRadius: '8px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
+          </div>
+          <button onClick={handleCrear} disabled={loading} style={{backgroundColor: '#c9963a', color: '#1a2d4a', border: 'none', padding: '16px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase'}}>
+            {loading ? 'Creando...' : 'Crear Paquete'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
