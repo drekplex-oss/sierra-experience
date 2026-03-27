@@ -1,8 +1,21 @@
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
+type Tour = {
+  id: string
+  name: string
+  description: string
+  image_url: string
+  duration: string
+  price: number
+  max_people: number
+  active: boolean
+  created_at: string
+}
+
 export default async function ToursPage() {
   const supabase = createClient()
+
   const { data: tours } = await supabase
     .from('tours')
     .select('*')
@@ -59,11 +72,11 @@ export default async function ToursPage() {
       <section style={{maxWidth: '1200px', margin: '0 auto', padding: '64px 32px'}}>
         {tours && tours.length > 0 ? (
           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '32px'}}>
-            {tours.map((tour) => (
+            {tours.map((tour: Tour) => (
               <div key={tour.id} style={{backgroundColor: '#ffffff', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(26,45,74,0.08)', border: '1px solid #e8edf5', display: 'flex', flexDirection: 'column'}}>
 
                 <div style={{position: 'relative', height: '240px', overflow: 'hidden'}}>
-                  <img src={tour.image_url} alt={tour.name} style={{width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s'}} />
+                  <img src={tour.image_url} alt={tour.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                   <div style={{position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,20,40,0.6) 0%, transparent 60%)'}} />
                   <div style={{position: 'absolute', top: '16px', right: '16px', backgroundColor: '#c9963a', color: '#1a2d4a', padding: '5px 14px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, letterSpacing: '1px'}}>
                     {tour.duration}
