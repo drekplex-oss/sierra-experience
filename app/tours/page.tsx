@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
 // 1. Definimos la interfaz del Tour
-type Tour = {
+interface Tour {
   id: string
   name: string
   description: string
@@ -17,11 +17,14 @@ type Tour = {
 export default async function ToursPage() {
   const supabase = createClient()
 
-  const { data: tours } = await supabase
+  // Forzamos a que TS sepa que lo que viene de Supabase son Tours
+  const { data } = await supabase
     .from('tours')
     .select('*')
     .eq('active', true)
     .order('created_at', { ascending: false })
+
+  const tours = data as Tour[] | null
 
   return (
     <main style={{backgroundColor: '#f0f4f8', minHeight: '100vh', fontFamily: 'Inter, sans-serif'}}>
@@ -50,7 +53,7 @@ export default async function ToursPage() {
       <section style={{maxWidth: '1200px', margin: '0 auto', padding: '64px 32px'}}>
         {tours && tours.length > 0 ? (
           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '32px'}}>
-            {/* 2. AQUÍ APLICAMOS EL TIPO :Tour PARA EVITAR EL ERROR DE ANY */}
+            {/* Mapeo con tipo explícito */}
             {tours.map((tour: Tour) => (
               <div key={tour.id} style={{backgroundColor: '#ffffff', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(26,45,74,0.08)', border: '1px solid #e8edf5', display: 'flex', flexDirection: 'column'}}>
 
