@@ -5,9 +5,15 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', border: '1px solid #dde3ee', borderRadius: '8px',
-  padding: '14px 16px', fontSize: '14px', outline: 'none',
-  boxSizing: 'border-box', color: '#1a2d4a', backgroundColor: '#ffffff',
+  width: '100%',
+  border: '1px solid #dde3ee',
+  borderRadius: '8px',
+  padding: '14px 16px',
+  fontSize: '14px',
+  outline: 'none',
+  boxSizing: 'border-box',
+  color: '#1a2d4a',
+  backgroundColor: '#ffffff',
 }
 
 function ReservarHotelForm() {
@@ -97,21 +103,22 @@ function ReservarHotelForm() {
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: 'Inter, sans-serif'}}>
       <div style={{maxWidth: '640px', margin: '0 auto', padding: '120px 32px 60px'}}>
+
         <Link href="/hoteles" style={{fontSize: '13px', color: '#8a9ab5', textDecoration: 'none', display: 'block', marginBottom: '24px'}}>
           ← Volver a hoteles
         </Link>
 
         {hotel && (
-          <div style={{backgroundColor: '#1a2d4a', borderRadius: '20px', overflow: 'hidden', marginBottom: '28px', boxShadow: '0 4px 24px rgba(26,45,74,0.15)'}}>
+          <div style={{backgroundColor: '#1a2d4a', borderRadius: '20px', overflow: 'hidden', marginBottom: '28px', boxShadow: '0 4px 24px rgba(26,45,74,0.15)', display: 'flex'}}>
             {hotel.image_url && (
-              <img src={hotel.image_url} alt={hotel.name} style={{width: '100%', height: '200px', objectFit: 'cover'}} />
+              <img src={hotel.image_url} alt={hotel.name} style={{width: '40%', height: '160px', objectFit: 'cover', flexShrink: 0}} />
             )}
-            <div style={{padding: '24px'}}>
-              <p style={{fontSize: '11px', letterSpacing: '2px', color: '#c9963a', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 600}}>{hotel.type}</p>
-              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#ffffff', marginBottom: '8px'}}>{hotel.name}</h2>
-              <p style={{fontSize: '14px', color: 'rgba(255,255,255,0.7)', marginBottom: '12px'}}>Máx. {hotel.max_people} personas</p>
-              <p style={{fontSize: '24px', fontWeight: 700, color: '#c9963a', margin: 0}}>
-                {'$'}{hotel.price?.toLocaleString()} <span style={{fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: 400}}>MXN / noche</span>
+            <div style={{padding: '20px', flex: 1}}>
+              <p style={{fontSize: '10px', letterSpacing: '2px', color: '#c9963a', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 600}}>{hotel.type}</p>
+              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#ffffff', marginBottom: '6px', lineHeight: 1.3}}>{hotel.name}</h2>
+              <p style={{fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '10px'}}>Máx. {hotel.max_people} personas</p>
+              <p style={{fontSize: '20px', fontWeight: 700, color: '#c9963a', margin: 0}}>
+                {'$'}{hotel.price?.toLocaleString()} <span style={{fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 400}}>MXN / noche</span>
               </p>
             </div>
           </div>
@@ -133,13 +140,13 @@ function ReservarHotelForm() {
               <label style={{display: 'block', fontSize: '11px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px'}}>
                 Check-in *
               </label>
-              <input type="date" value={checkIn} onChange={e => setCheckIn(e.target.value)} style={inputStyle} />
+              <input type="date" value={checkIn} onChange={e => setCheckIn(e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle} />
             </div>
             <div>
               <label style={{display: 'block', fontSize: '11px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px'}}>
                 Check-out *
               </label>
-              <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} style={inputStyle} />
+              <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle} />
             </div>
           </div>
 
@@ -154,7 +161,7 @@ function ReservarHotelForm() {
             <label style={{display: 'block', fontSize: '11px', fontWeight: 600, color: '#1a2d4a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px'}}>
               Notas adicionales
             </label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Peticiones especiales, llegada tarde, etc..." style={{...inputStyle, resize: 'none'}} />
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Peticiones especiales, llegada tarde, etc..." style={{...inputStyle, resize: 'none', fontFamily: 'Inter, sans-serif'}} />
           </div>
 
           {noches > 0 && (
@@ -163,7 +170,7 @@ function ReservarHotelForm() {
                 <span style={{fontSize: '14px', color: '#6a7a8a'}}>${hotel?.price?.toLocaleString()} MXN x {noches} {noches === 1 ? 'noche' : 'noches'}</span>
                 <span style={{fontSize: '14px', color: '#1a2d4a', fontWeight: 600}}>${(hotel?.price * noches).toLocaleString()} MXN</span>
               </div>
-              <div style={{borderTop: '1px solid #e8edf5', paddingTop: '12px', display: 'flex', justifyContent: 'space-between'}}>
+              <div style={{borderTop: '1px solid #e8edf5', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <span style={{fontSize: '15px', fontWeight: 700, color: '#1a2d4a'}}>Total estimado</span>
                 <span style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#c9963a'}}>${total.toLocaleString()} MXN</span>
               </div>

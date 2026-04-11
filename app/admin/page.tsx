@@ -2,18 +2,6 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-// Definimos tipos para evitar errores de "any"
-interface Reservation {
-  id: string
-  status: string
-  created_at: string
-  date: string
-  people: number
-  tour_id: string
-  tours: { name: string; price: number } | null
-  profiles: { full_name: string } | null
-}
-
 export default async function AdminPage() {
   const supabase = await createServerSupabaseClient()
   const { data: { session } } = await supabase.auth.getSession()
@@ -23,13 +11,10 @@ export default async function AdminPage() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin' && user.email !== 'jobanfierro6@gmail.com') redirect('/')
 
-  // Traemos los datos forzando el tipo de array
-  const { data: reservationsData } = await supabase
+  const { data: reservations } = await supabase
     .from('reservations')
     .select('*, tours(name, price), profiles(full_name)')
     .order('created_at', { ascending: false })
-  
-  const reservations = (reservationsData as unknown as Reservation[]) || []
 
   const { data: reservationsPaquetes } = await supabase
     .from('reservations_paquetes')
@@ -49,12 +34,12 @@ export default async function AdminPage() {
   allProfiles?.forEach(p => { profileMap[p.id] = p.full_name || 'Sin nombre' })
 
   const today = new Date().toISOString().split('T')[0]
-  const total = reservations.length
-  const pendientes = reservations.filter(r => r.status === 'pendiente').length
-  const confirmadas = reservations.filter(r => r.status === 'confirmada').length
-  const canceladas = reservations.filter(r => r.status === 'cancelada').length
-  const ingresos = reservations.filter(r => r.status !== 'cancelada').reduce((sum, r) => sum + (r.tours?.price || 0) * r.people, 0)
-  const proximasHoy = reservations.filter(r => r.date === today)
+  const total = reservations?.length || 0
+  const pendientes = reservations?.filter(r => r.status === 'pendiente').length || 0
+  const confirmadas = reservations?.filter(r => r.status === 'confirmada').length || 0
+  const canceladas = reservations?.filter(r => r.status === 'cancelada').length || 0
+  const ingresos = reservations?.filter(r => r.status !== 'cancelada').reduce((sum, r) => sum + (r.tours?.price || 0) * r.people, 0) || 0
+  const proximasHoy = reservations?.filter(r => r.date === today) || []
 
   const meses: Record<string, number> = {}
   for (let i = 5; i >= 0; i--) {
@@ -63,7 +48,7 @@ export default async function AdminPage() {
     const key = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
     meses[key] = 0
   }
-  reservations.forEach(r => {
+  reservations?.forEach(r => {
     const d = new Date(r.created_at)
     const key = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
     if (key in meses) meses[key]++
@@ -71,7 +56,7 @@ export default async function AdminPage() {
   const maxMes = Math.max(...Object.values(meses), 1)
 
   const tourCount: Record<string, { name: string, count: number }> = {}
-  reservations.forEach(r => {
+  reservations?.forEach(r => {
     const id = r.tour_id
     if (!tourCount[id]) tourCount[id] = { name: r.tours?.name || 'Sin nombre', count: 0 }
     tourCount[id].count++
@@ -117,7 +102,6 @@ export default async function AdminPage() {
 
         <div style={{padding: '40px', display: 'flex', flexDirection: 'column', gap: '32px'}}>
 
-          {/* ACCIONES RAPIDAS */}
           <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px'}}>
             {[
               { label: 'Nuevo Tour', href: '/admin/tours/nuevo', icon: '🏔️', desc: 'Agregar un tour nuevo' },
@@ -137,7 +121,6 @@ export default async function AdminPage() {
             ))}
           </div>
 
-          {/* STATS */}
           <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px'}}>
             {[
               { label: 'Total Reservas', value: total, color: '#1a2d4a', bg: '#ffffff' },
@@ -153,7 +136,42 @@ export default async function AdminPage() {
             ))}
           </div>
 
-          {/* TABLAS DE HOY */}
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px'}}>
+            <div style={{backgroundColor: '#ffffff', borderRadius: '16px', padding: '28px', boxShadow: '0 2px 12px rgba(26,45,74,0.06)'}}>
+              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#1a2d4a', marginBottom: '24px'}}>Reservas por Mes</h2>
+              <div style={{display: 'flex', alignItems: 'flex-end', gap: '12px', height: '160px'}}>
+                {Object.entries(meses).map(([mes, count]) => (
+                  <div key={mes} style={{flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'flex-end'}}>
+                    <p style={{fontSize: '12px', fontWeight: 700, color: '#1a2d4a'}}>{count}</p>
+                    <div style={{width: '100%', borderRadius: '6px 6px 0 0', backgroundColor: count > 0 ? '#c9963a' : '#e8edf5', height: `${Math.max((count / maxMes) * 120, 4)}px`}} />
+                    <p style={{fontSize: '10px', color: '#8a9ab5', textAlign: 'center'}}>{mes}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{backgroundColor: '#ffffff', borderRadius: '16px', padding: '28px', boxShadow: '0 2px 12px rgba(26,45,74,0.06)'}}>
+              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#1a2d4a', marginBottom: '24px'}}>Tours Mas Populares</h2>
+              {toursPopulares.length > 0 ? (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                  {toursPopulares.map((t, i) => (
+                    <div key={t.name} style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                      <div style={{width: '32px', height: '32px', borderRadius: '50%', backgroundColor: i === 0 ? '#c9963a' : i === 1 ? '#1a2d4a' : '#8a9ab5', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, flexShrink: 0}}>{i + 1}</div>
+                      <div style={{flex: 1}}>
+                        <p style={{fontSize: '14px', fontWeight: 600, color: '#1a2d4a', marginBottom: '4px'}}>{t.name}</p>
+                        <div style={{height: '6px', borderRadius: '3px', backgroundColor: '#f0f4f8'}}>
+                          <div style={{height: '100%', borderRadius: '3px', backgroundColor: i === 0 ? '#c9963a' : '#1a2d4a', width: `${(t.count / (toursPopulares[0]?.count || 1)) * 100}%`}} />
+                        </div>
+                      </div>
+                      <p style={{fontSize: '13px', fontWeight: 700, color: '#8a9ab5'}}>{t.count}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{fontSize: '14px', color: '#8a9ab5'}}>Sin reservas aun</p>
+              )}
+            </div>
+          </div>
+
           <div style={{backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(26,45,74,0.06)'}}>
             <div style={{padding: '24px 32px', borderBottom: '1px solid #e8edf5', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#1a2d4a', margin: 0}}>Reservas para Hoy</h2>
@@ -169,7 +187,7 @@ export default async function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {proximasHoy.map((res: Reservation) => (
+                  {proximasHoy.map((res: any) => (
                     <tr key={res.id} style={{borderTop: '1px solid #f0f4f8'}}>
                       <td style={{padding: '14px 24px', fontSize: '14px', color: '#1a2d4a', fontWeight: 500}}>{res.profiles?.full_name || 'Sin nombre'}</td>
                       <td style={{padding: '14px 24px', fontSize: '14px', color: '#4a5a6a'}}>{res.tours?.name}</td>
@@ -185,6 +203,113 @@ export default async function AdminPage() {
               <p style={{padding: '32px', textAlign: 'center', color: '#8a9ab5', fontSize: '14px'}}>No hay reservas programadas para hoy</p>
             )}
           </div>
+
+          <div style={{backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(26,45,74,0.06)'}}>
+            <div style={{padding: '24px 32px', borderBottom: '1px solid #e8edf5'}}>
+              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#1a2d4a', margin: 0}}>Reservas de Tours</h2>
+            </div>
+            {reservations && reservations.length > 0 ? (
+              <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                <thead>
+                  <tr style={{backgroundColor: '#f8fafd'}}>
+                    {['Cliente', 'Tour', 'Fecha', 'Personas', 'Estado', 'Accion'].map((h) => (
+                      <th key={h} style={{textAlign: 'left', padding: '14px 24px', fontSize: '11px', fontWeight: 600, color: '#8a9ab5', letterSpacing: '1px', textTransform: 'uppercase'}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reservations.map((res: any) => (
+                    <tr key={res.id} style={{borderTop: '1px solid #f0f4f8'}}>
+                      <td style={{padding: '16px 24px', fontSize: '14px', color: '#1a2d4a', fontWeight: 500}}>{res.profiles?.full_name || 'Sin nombre'}</td>
+                      <td style={{padding: '16px 24px', fontSize: '14px', color: '#4a5a6a'}}>{res.tours?.name}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{new Date(res.date).toLocaleDateString('es-MX')}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{res.people}</td>
+                      <td style={{padding: '16px 24px'}}>
+                        <span style={{backgroundColor: statusStyle[res.status]?.bg, color: statusStyle[res.status]?.color, padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 600}}>{res.status.charAt(0).toUpperCase() + res.status.slice(1)}</span>
+                      </td>
+                      <td style={{padding: '16px 24px'}}>
+                        <Link href={`/admin/reservas/${res.id}`} style={{fontSize: '13px', color: '#c9963a', textDecoration: 'none', fontWeight: 600}}>Gestionar</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{padding: '32px', textAlign: 'center', color: '#8a9ab5', fontSize: '14px'}}>No hay reservas de tours aun</p>
+            )}
+          </div>
+
+          <div style={{backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(26,45,74,0.06)'}}>
+            <div style={{padding: '24px 32px', borderBottom: '1px solid #e8edf5'}}>
+              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#1a2d4a', margin: 0}}>Reservas de Paquetes</h2>
+            </div>
+            {reservationsPaquetes && reservationsPaquetes.length > 0 ? (
+              <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                <thead>
+                  <tr style={{backgroundColor: '#f8fafd'}}>
+                    {['Cliente', 'Paquete', 'Fecha', 'Personas', 'Estado', 'Accion'].map((h) => (
+                      <th key={h} style={{textAlign: 'left', padding: '14px 24px', fontSize: '11px', fontWeight: 600, color: '#8a9ab5', letterSpacing: '1px', textTransform: 'uppercase'}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reservationsPaquetes.map((res: any) => (
+                    <tr key={res.id} style={{borderTop: '1px solid #f0f4f8'}}>
+                      <td style={{padding: '16px 24px', fontSize: '14px', color: '#1a2d4a', fontWeight: 500}}>{profileMap[res.user_id] || 'Sin nombre'}</td>
+                      <td style={{padding: '16px 24px', fontSize: '14px', color: '#4a5a6a'}}>{res.paquetes?.name}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{new Date(res.date).toLocaleDateString('es-MX')}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{res.people}</td>
+                      <td style={{padding: '16px 24px'}}>
+                        <span style={{backgroundColor: statusStyle[res.status]?.bg, color: statusStyle[res.status]?.color, padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 600}}>{res.status.charAt(0).toUpperCase() + res.status.slice(1)}</span>
+                      </td>
+                      <td style={{padding: '16px 24px'}}>
+                        <Link href={`/admin/reservas-paquetes/${res.id}`} style={{fontSize: '13px', color: '#c9963a', textDecoration: 'none', fontWeight: 600}}>Gestionar</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{padding: '32px', textAlign: 'center', color: '#8a9ab5', fontSize: '14px'}}>No hay reservas de paquetes aun</p>
+            )}
+          </div>
+
+          <div style={{backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(26,45,74,0.06)'}}>
+            <div style={{padding: '24px 32px', borderBottom: '1px solid #e8edf5'}}>
+              <h2 style={{fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18px', fontWeight: 700, color: '#1a2d4a', margin: 0}}>Reservas de Hoteles</h2>
+            </div>
+            {reservationsHoteles && reservationsHoteles.length > 0 ? (
+              <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                <thead>
+                  <tr style={{backgroundColor: '#f8fafd'}}>
+                    {['Cliente', 'Hotel', 'Check-in', 'Check-out', 'Personas', 'Estado', 'Accion'].map((h) => (
+                      <th key={h} style={{textAlign: 'left', padding: '14px 24px', fontSize: '11px', fontWeight: 600, color: '#8a9ab5', letterSpacing: '1px', textTransform: 'uppercase'}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reservationsHoteles.map((res: any) => (
+                    <tr key={res.id} style={{borderTop: '1px solid #f0f4f8'}}>
+                      <td style={{padding: '16px 24px', fontSize: '14px', color: '#1a2d4a', fontWeight: 500}}>{profileMap[res.user_id] || 'Sin nombre'}</td>
+                      <td style={{padding: '16px 24px', fontSize: '14px', color: '#4a5a6a'}}>{res.hoteles?.name}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{new Date(res.check_in).toLocaleDateString('es-MX')}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{new Date(res.check_out).toLocaleDateString('es-MX')}</td>
+                      <td style={{padding: '16px 24px', fontSize: '13px', color: '#8a9ab5'}}>{res.people}</td>
+                      <td style={{padding: '16px 24px'}}>
+                        <span style={{backgroundColor: statusStyle[res.status]?.bg, color: statusStyle[res.status]?.color, padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 600}}>{res.status.charAt(0).toUpperCase() + res.status.slice(1)}</span>
+                      </td>
+                      <td style={{padding: '16px 24px'}}>
+                        <Link href={`/admin/reservas-hoteles/${res.id}`} style={{fontSize: '13px', color: '#c9963a', textDecoration: 'none', fontWeight: 600}}>Gestionar</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{padding: '32px', textAlign: 'center', color: '#8a9ab5', fontSize: '14px'}}>No hay reservas de hoteles aun</p>
+            )}
+          </div>
+
         </div>
       </main>
     </div>

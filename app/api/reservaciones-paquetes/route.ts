@@ -6,14 +6,14 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const { hotel_id, check_in, check_out, people, notes } = await req.json()
-  if (!hotel_id || !check_in || !check_out || !people) {
+  const { paquete_id, date, people, notes } = await req.json()
+  if (!paquete_id || !date || !people) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
   const { data, error } = await supabase
-    .from('reservations_hoteles')
-    .insert({ user_id: user.id, hotel_id, check_in, check_out, people, notes })
+    .from('reservations_paquetes')
+    .insert({ user_id: user.id, paquete_id, date, people, notes })
     .select()
     .single()
 
